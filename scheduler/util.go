@@ -112,11 +112,11 @@ func diffAllocs(job *structs.Job, taintedNodes map[string]*structs.Node,
 				})
 			} else {
 				// This is the drain case
-				result.migrate = append(result.migrate, allocTuple{
-					Name:      name,
-					TaskGroup: tg,
-					Alloc:     exist,
-				})
+				// result.migrate = append(result.migrate, allocTuple{
+				// 	Name:      name,
+				// 	TaskGroup: tg,
+				// 	Alloc:     exist,
+				// })
 			}
 			continue
 		}
