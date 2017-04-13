@@ -114,6 +114,7 @@ def configureVM(vmCfg, vmParams={
   vmCfg.vm.provider "virtualbox" do |v|
     v.memory = memory
     v.cpus = cpus
+    v.customize ["modifyvm", :id, "--cableconnected1", "on"]
   end
 
   ["vmware_fusion", "vmware_workstation"].each do |p|
