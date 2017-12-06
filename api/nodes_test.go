@@ -167,7 +167,7 @@ func TestNodes_ToggleDrain(t *testing.T) {
 	}
 
 	// Toggle it on
-	wm, err := nodes.ToggleDrain(nodeID, true, nil)
+	wm, err := nodes.ToggleDrain(nodeID, true, "none", nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -183,7 +183,7 @@ func TestNodes_ToggleDrain(t *testing.T) {
 	}
 
 	// Toggle off again
-	wm, err = nodes.ToggleDrain(nodeID, false, nil)
+	wm, err = nodes.ToggleDrain(nodeID, false, "none", nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

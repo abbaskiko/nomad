@@ -263,7 +263,7 @@ func TestHTTP_NodeDrain(t *testing.T) {
 		}
 
 		// Make the HTTP request
-		req, err := http.NewRequest("POST", "/v1/node/"+node.ID+"/drain?enable=1", nil)
+		req, err := http.NewRequest("POST", "/v1/node/"+node.ID+"/drain?enable=1&type=none", nil)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}

@@ -706,7 +706,7 @@ func TestStateStore_UpdateNodeDrain_Node(t *testing.T) {
 		t.Fatalf("bad: %v", err)
 	}
 
-	err = state.UpdateNodeDrain(1001, node.ID, true)
+	err = state.UpdateNodeDrain(1001, node.ID, true, structs.DrainTypeBatch)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -722,6 +722,9 @@ func TestStateStore_UpdateNodeDrain_Node(t *testing.T) {
 	}
 
 	if !out.Drain {
+		t.Fatalf("bad: %#v", out)
+	}
+	if out.DrainType != structs.DrainTypeBatch {
 		t.Fatalf("bad: %#v", out)
 	}
 	if out.ModifyIndex != 1001 {

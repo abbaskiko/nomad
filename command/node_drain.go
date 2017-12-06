@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/nomad/api/contexts"
+	"github.com/hashicorp/nomad/nomad/structs"
 	"github.com/posener/complete"
 )
 
@@ -32,6 +33,9 @@ Node Drain Options:
   -enable
     Enable draining for the specified node.
 
+	-type
+		Set the drain type for the specified node. (batch|service|none)
+
   -self
     Query the status of the local node.
 
@@ -50,6 +54,7 @@ func (c *NodeDrainCommand) AutocompleteFlags() complete.Flags {
 		complete.Flags{
 			"-disable": complete.PredictNothing,
 			"-enable":  complete.PredictNothing,
+			"-type":    complete.PredictAnything,
 			"-self":    complete.PredictNothing,
 			"-yes":     complete.PredictNothing,
 		})
@@ -72,11 +77,13 @@ func (c *NodeDrainCommand) AutocompleteArgs() complete.Predictor {
 
 func (c *NodeDrainCommand) Run(args []string) int {
 	var enable, disable, self, autoYes bool
+	var drainType string
 
 	flags := c.Meta.FlagSet("node-drain", FlagSetClient)
 	flags.Usage = func() { c.Ui.Output(c.Help()) }
 	flags.BoolVar(&enable, "enable", false, "Enable drain mode")
 	flags.BoolVar(&disable, "disable", false, "Disable drain mode")
+	flags.StringVar(&drainType, "type", "none", "Control the node drain behaviour")
 	flags.BoolVar(&self, "self", false, "")
 	flags.BoolVar(&autoYes, "yes", false, "Automatic yes to prompts.")
 
@@ -86,6 +93,12 @@ func (c *NodeDrainCommand) Run(args []string) int {
 
 	// Check that we got either enable or disable, but not both.
 	if (enable && disable) || (!enable && !disable) {
+		c.Ui.Error(c.Help())
+		return 1
+	}
+
+	// Check that the drain type is valid
+	if (drainType != structs.DrainTypeNone) && (drainType != structs.DrainTypeBatch) && (drainType != structs.DrainTypeService) {
 		c.Ui.Error(c.Help())
 		return 1
 	}
@@ -187,7 +200,7 @@ func (c *NodeDrainCommand) Run(args []string) int {
 	}
 
 	// Toggle node draining
-	if _, err := client.Nodes().ToggleDrain(node.ID, enable, nil); err != nil {
+	if _, err := client.Nodes().ToggleDrain(node.ID, enable, drainType, nil); err != nil {
 		c.Ui.Error(fmt.Sprintf("Error toggling drain mode: %s", err))
 		return 1
 	}

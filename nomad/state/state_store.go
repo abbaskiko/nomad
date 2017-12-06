@@ -515,7 +515,8 @@ func (s *StateStore) UpsertNode(index uint64, node *structs.Node) error {
 		exist := existing.(*structs.Node)
 		node.CreateIndex = exist.CreateIndex
 		node.ModifyIndex = index
-		node.Drain = exist.Drain // Retain the drain mode
+		node.Drain = exist.Drain         // Retain the drain mode
+		node.DrainType = exist.DrainType // Retain the drain type
 	} else {
 		node.CreateIndex = index
 		node.ModifyIndex = index
@@ -595,7 +596,7 @@ func (s *StateStore) UpdateNodeStatus(index uint64, nodeID, status string) error
 }
 
 // UpdateNodeDrain is used to update the drain of a node
-func (s *StateStore) UpdateNodeDrain(index uint64, nodeID string, drain bool) error {
+func (s *StateStore) UpdateNodeDrain(index uint64, nodeID string, drain bool, drainType string) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -615,6 +616,7 @@ func (s *StateStore) UpdateNodeDrain(index uint64, nodeID string, drain bool) er
 
 	// Update the drain in the copy
 	copyNode.Drain = drain
+	copyNode.DrainType = drainType
 	copyNode.ModifyIndex = index
 
 	// Insert the node

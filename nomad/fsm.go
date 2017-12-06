@@ -320,7 +320,7 @@ func (n *nomadFSM) applyDrainUpdate(buf []byte, index uint64) interface{} {
 		panic(fmt.Errorf("failed to decode request: %v", err))
 	}
 
-	if err := n.state.UpdateNodeDrain(index, req.NodeID, req.Drain); err != nil {
+	if err := n.state.UpdateNodeDrain(index, req.NodeID, req.Drain, req.DrainType); err != nil {
 		n.logger.Printf("[ERR] nomad.fsm: UpdateNodeDrain failed: %v", err)
 		return err
 	}

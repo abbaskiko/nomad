@@ -111,9 +111,16 @@ func (s *HTTPServer) nodeToggleDrain(resp http.ResponseWriter, req *http.Request
 		return nil, CodedError(400, "invalid enable value")
 	}
 
+	// Get the reallocate value
+	drainType := req.URL.Query().Get("type")
+	if drainType == "" {
+		return nil, CodedError(401, "missing type value")
+	}
+
 	args := structs.NodeUpdateDrainRequest{
-		NodeID: nodeID,
-		Drain:  enable,
+		NodeID:    nodeID,
+		Drain:     enable,
+		DrainType: drainType,
 	}
 	s.parseWriteRequest(req, &args.WriteRequest)
 

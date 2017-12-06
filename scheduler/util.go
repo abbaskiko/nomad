@@ -110,13 +110,16 @@ func diffAllocs(job *structs.Job, taintedNodes map[string]*structs.Node,
 					TaskGroup: tg,
 					Alloc:     exist,
 				})
-			} else {
-				// This is the drain case
+			} else if node.RellocateJobType(exist.Job.Type) {
+				// The Node is draining and we should reallocate this job type
 				result.migrate = append(result.migrate, allocTuple{
 					Name:      name,
 					TaskGroup: tg,
 					Alloc:     exist,
 				})
+			} else {
+				// The Node is draining and we should not reallocate this job type
+				goto IGNORE
 			}
 			continue
 		}

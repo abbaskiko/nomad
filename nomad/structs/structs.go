@@ -290,10 +290,11 @@ type NodeUpdateStatusRequest struct {
 	WriteRequest
 }
 
-// NodeUpdateDrainRequest is used for updatin the drain status
+// NodeUpdateDrainRequest is used for updating the drain status
 type NodeUpdateDrainRequest struct {
-	NodeID string
-	Drain  bool
+	NodeID    string
+	Drain     bool
+	DrainType string
 	WriteRequest
 }
 
@@ -1052,6 +1053,15 @@ func ValidNodeStatus(status string) bool {
 	}
 }
 
+const (
+	// Do not reallocate batch jobs, but rellocate all other types.
+	DrainTypeBatch = "batch"
+	// Do not reallocate services or batch jobs, but reallocate all other types.
+	DrainTypeService = "service"
+	// Reallocate all jobs
+	DrainTypeNone = "none"
+)
+
 // Node is a representation of a schedulable client node
 type Node struct {
 	// ID is a unique identifier for the node. It can be constructed
@@ -1114,7 +1124,8 @@ type Node struct {
 	// Drain is controlled by the servers, and not the client.
 	// If true, no jobs will be scheduled to this node, and existing
 	// allocations will be drained.
-	Drain bool
+	Drain     bool
+	DrainType string
 
 	// Status of this node
 	Status string
@@ -1158,6 +1169,21 @@ func (n *Node) TerminalStatus() bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func (n *Node) RellocateJobType(jobType string) bool {
+	switch n.DrainType {
+	case DrainTypeService:
+		service := jobType == JobTypeService
+		batch := jobType == JobTypeBatch
+		return !service && !batch
+	case DrainTypeBatch:
+		return jobType != JobTypeBatch
+	case DrainTypeNone:
+		return true
+	default:
+		return true
 	}
 }
 

@@ -2227,7 +2227,7 @@ func TestClientEndpoint_ListNodes_Blocking(t *testing.T) {
 
 	// Node drain updates trigger watches.
 	time.AfterFunc(100*time.Millisecond, func() {
-		if err := state.UpdateNodeDrain(3, node.ID, true); err != nil {
+		if err := state.UpdateNodeDrain(3, node.ID, true, structs.DrainTypeNone); err != nil {
 			t.Fatalf("err: %v", err)
 		}
 	})
