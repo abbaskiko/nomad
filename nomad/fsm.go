@@ -424,18 +424,18 @@ func (n *nomadFSM) applyDeregisterJob(buf []byte, index uint64) interface{} {
 	defer metrics.MeasureSince([]string{"nomad", "fsm", "deregister_job"}, time.Now())
 	var req structs.JobDeregisterRequest
 	if err := structs.Decode(buf, &req); err != nil {
-		panic(fmt.Errorf("failed to decode request: %v", err))
+		panic(fmt.Errorf("failed to decode request for %v: %v", req.JobID, err))
 	}
 
 	// If it is periodic remove it from the dispatcher
 	if err := n.periodicDispatcher.Remove(req.Namespace, req.JobID); err != nil {
-		n.logger.Printf("[ERR] nomad.fsm: periodicDispatcher.Remove failed: %v", err)
+		n.logger.Printf("[ERR] nomad.fsm: periodicDispatcher.Remove failed for %v: %v", req.JobID, err)
 		return err
 	}
 
 	if req.Purge {
 		if err := n.state.DeleteJob(index, req.Namespace, req.JobID); err != nil {
-			n.logger.Printf("[ERR] nomad.fsm: DeleteJob failed: %v", err)
+			n.logger.Printf("[ERR] nomad.fsm: DeleteJob failed for %v: %v", req.JobID, err)
 			return err
 		}
 
@@ -448,7 +448,7 @@ func (n *nomadFSM) applyDeregisterJob(buf []byte, index uint64) interface{} {
 		ws := memdb.NewWatchSet()
 		current, err := n.state.JobByID(ws, req.Namespace, req.JobID)
 		if err != nil {
-			n.logger.Printf("[ERR] nomad.fsm: JobByID lookup failed: %v", err)
+			n.logger.Printf("[ERR] nomad.fsm: JobByID lookup failed for %v: %v", req.JobID, err)
 			return err
 		}
 
@@ -460,7 +460,7 @@ func (n *nomadFSM) applyDeregisterJob(buf []byte, index uint64) interface{} {
 		stopped.Stop = true
 
 		if err := n.state.UpsertJob(index, stopped); err != nil {
-			n.logger.Printf("[ERR] nomad.fsm: UpsertJob failed: %v", err)
+			n.logger.Printf("[ERR] nomad.fsm: UpsertJob failed for %v: %v", req.JobID, err)
 			return err
 		}
 	}
