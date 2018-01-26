@@ -133,12 +133,13 @@ OUTER:
 		}
 	}
 
+	c.srv.logger.Printf("[DEBUG] sched.core: job GC: %d jobs, %d evaluations, %d allocs eligible",
+		len(gcJob), len(gcEval), len(gcAlloc))
+
 	// Fast-path the nothing case
 	if len(gcEval) == 0 && len(gcAlloc) == 0 && len(gcJob) == 0 {
 		return nil
 	}
-	c.srv.logger.Printf("[DEBUG] sched.core: job GC: %d jobs, %d evaluations, %d allocs eligible",
-		len(gcJob), len(gcEval), len(gcAlloc))
 
 	// Reap the evals and allocs
 	if err := c.evalReap(gcEval, gcAlloc); err != nil {
@@ -207,13 +208,13 @@ func (c *CoreScheduler) evalGC(eval *structs.Evaluation) error {
 		gcAlloc = append(gcAlloc, allocs...)
 	}
 
+	c.srv.logger.Printf("[DEBUG] sched.core: eval GC: %d evaluations, %d allocs eligible",
+		len(gcEval), len(gcAlloc))
+
 	// Fast-path the nothing case
 	if len(gcEval) == 0 && len(gcAlloc) == 0 {
 		return nil
 	}
-	c.srv.logger.Printf("[DEBUG] sched.core: eval GC: %d evaluations, %d allocs eligible",
-		len(gcEval), len(gcAlloc))
-
 	return c.evalReap(gcEval, gcAlloc)
 }
 
@@ -399,11 +400,12 @@ OUTER:
 		gcNode = append(gcNode, node.ID)
 	}
 
+	c.srv.logger.Printf("[DEBUG] sched.core: node GC: %d nodes eligible", len(gcNode))
+
 	// Fast-path the nothing case
 	if len(gcNode) == 0 {
 		return nil
 	}
-	c.srv.logger.Printf("[DEBUG] sched.core: node GC: %d nodes eligible", len(gcNode))
 
 	// Call to the leader to issue the reap
 	for _, nodeID := range gcNode {
