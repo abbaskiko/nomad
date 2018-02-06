@@ -339,6 +339,7 @@ type Telemetry struct {
 	StatsdAddr               string        `mapstructure:"statsd_address"`
 	DataDogAddr              string        `mapstructure:"datadog_address"`
 	PrometheusMetrics        bool          `mapstructure:"prometheus_metrics"`
+	DataDogTags              []string      `mapstructure:"datadog_tags"`
 	DisableHostname          bool          `mapstructure:"disable_hostname"`
 	UseNodeName              bool          `mapstructure:"use_node_name"`
 	CollectionInterval       string        `mapstructure:"collection_interval"`
@@ -1135,6 +1136,9 @@ func (a *Telemetry) Merge(b *Telemetry) *Telemetry {
 	}
 	if b.PrometheusMetrics {
 		result.PrometheusMetrics = b.PrometheusMetrics
+	}
+	if b.DataDogTags != nil {
+		result.DataDogTags = b.DataDogTags
 	}
 	if b.DisableHostname {
 		result.DisableHostname = true

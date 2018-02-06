@@ -622,6 +622,7 @@ func parseTelemetry(result **Telemetry, list *ast.ObjectList) error {
 		"publish_node_metrics",
 		"datadog_address",
 		"prometheus_metrics",
+		"datadog_tags",
 		"circonus_api_token",
 		"circonus_api_app",
 		"circonus_api_url",
