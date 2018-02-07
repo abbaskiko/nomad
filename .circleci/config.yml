@@ -1,0 +1,15 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+    - image: golang:1.10
+    working_directory: /go/src/github.com/hashicorp/nomad
+    steps:
+    - checkout
+    - run: apt-get update && apt-get install -y zip tree file
+    - run: make pkg/linux_amd64/nomad
+    - run: find pkg -type f | xargs sha256sum
+    - store_artifacts:
+        path: pkg
+        destination: binaries
