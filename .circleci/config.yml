@@ -1,0 +1,15 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+    - image: golang:1.9
+    working_directory: /go/src/github.com/hashicorp/nomad
+    steps:
+    - checkout
+    - run: apt-get update && apt-get install -y zip tree file
+    - run: make bootstrap bin
+    - run: find pkg -type f | xargs sha256sum
+    - store_artifacts:
+        path: pkg
+        destination: binaries
