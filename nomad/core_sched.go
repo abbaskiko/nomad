@@ -123,6 +123,7 @@ OUTER:
 			}
 
 			if gc {
+
 				jobEval = append(jobEval, eval.ID)
 				jobAlloc = append(jobAlloc, allocs...)
 			} else {
@@ -136,6 +137,8 @@ OUTER:
 			gcJob = append(gcJob, job)
 			gcAlloc = append(gcAlloc, jobAlloc...)
 			gcEval = append(gcEval, jobEval...)
+
+			c.srv.logger.Printf("[DEBUG] sched.core: reaping job GC: job:%v, evaluations:%v, allocs:%v", job, jobEval, jobAlloc)
 		}
 	}
 
@@ -257,6 +260,8 @@ func (c *CoreScheduler) evalGC(eval *structs.Evaluation) error {
 	}
 	c.srv.logger.Printf("[DEBUG] sched.core: eval GC: %d evaluations, %d allocs eligible",
 		len(gcEval), len(gcAlloc))
+	c.srv.logger.Printf("[DEBUG] sched.core: eval GC: reaping evaluations:%v, allocs:%v",
+		gcEval, gcAlloc)
 
 	return c.evalReap(gcEval, gcAlloc)
 }

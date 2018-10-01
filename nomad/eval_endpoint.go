@@ -306,6 +306,9 @@ func (e *Eval) Reap(args *structs.EvalDeleteRequest,
 	}
 	defer metrics.MeasureSince([]string{"nomad", "eval", "reap"}, time.Now())
 
+	e.srv.logger.Printf("[ERR] reaping evals: %#v", args.Evals)
+	e.srv.logger.Printf("[ERR] reaping allocs: %#v", args.Allocs)
+
 	// Update via Raft
 	_, index, err := e.srv.raftApply(structs.EvalDeleteRequestType, args)
 	if err != nil {
