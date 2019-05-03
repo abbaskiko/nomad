@@ -1,5 +1,3 @@
-TAG ?= 0.5.6-5.1
-
 .PHONY: image_internal
 image_internal:
 	docker build --pull  -t circleci/nomad:$(TAG) .

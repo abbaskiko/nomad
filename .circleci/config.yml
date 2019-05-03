@@ -18,9 +18,21 @@ jobs:
           name: Compile
           command: make bin
 
+      # TODO
+      # push to s3
+
+  build_container:
+    working_directory: /go/src/github.com/hashicorp/nomad/docker
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name:
+          command: |
+            export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"
+            make publish
+
 # TODO
-# build container
-# publish container
 # cache depedencies
 
 workflows:
@@ -28,3 +40,4 @@ workflows:
   build_and_test:
     jobs:
       - build
+      - build_container
