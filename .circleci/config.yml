@@ -17,7 +17,9 @@ jobs:
       #     command: make test
       - run:
           name: Compile
-          command: make bin
+          command: |
+            apt-get update && apt-get install tree
+            make bin
       - persist_to_workspace:
           root: .
           paths:
