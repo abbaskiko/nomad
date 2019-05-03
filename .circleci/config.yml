@@ -1,0 +1,25 @@
+version: 2 # use CircleCI 2.0
+jobs: 
+  build:
+    docker: 
+      - image: circleci/golang:1.12 #
+
+    working_directory: /go/src/github.com/CircleCI-Public/circleci-demo-go
+
+    environment: # environment variables for the build itself
+
+    steps: # steps that comprise the `build` job
+      - checkout # check out source code to working directory
+      - run:
+          name: Start service
+          command: ./workdir/contacts
+
+      - store_test_results: # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
+          path: /tmp/test-results
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test

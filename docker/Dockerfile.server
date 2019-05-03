@@ -1,0 +1,18 @@
+ARG BASE_NOMAD_TAG
+
+FROM circleci/nomad:${BASE_NOMAD_TAG}
+
+RUN apt-get update \
+    && apt-get install -y \
+         sudo \
+         apt-transport-https \
+         software-properties-common \
+         ca-certificates \
+         netcat \
+         gnupg2 \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add - \
+    && sudo add-apt-repository \
+            "deb [arch=amd64] https://download.docker.com/linux/debian        $(lsb_release -cs)        stable" \
+    && sudo apt-get update \
+    && sudo apt-get -y install docker-ce \
+    && rm -rf /var/lib/apt/lists/*
