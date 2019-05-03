@@ -23,6 +23,9 @@ jobs:
 
   build_container:
     working_directory: /go/src/github.com/hashicorp/nomad/docker
+    docker:
+      - image: circleci/golang:1.12
+        user: root
     steps:
       - checkout
       - setup_remote_docker
