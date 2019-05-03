@@ -1,25 +1,56 @@
-version: 2 # use CircleCI 2.0
-jobs: 
+version: 2.1
+
+jobs:
   build:
-    docker: 
-      - image: circleci/golang:1.12 #
-
-    working_directory: /go/src/github.com/CircleCI-Public/circleci-demo-go
-
-    environment: # environment variables for the build itself
-
-    steps: # steps that comprise the `build` job
-      - checkout # check out source code to working directory
+    working_directory: /go/src/github.com/hashicorp/nomad
+    docker:
+      - image: circleci/golang:1.12
+        user: root
+    environment:
+    steps:
+      - checkout
       - run:
-          name: Start service
-          command: ./workdir/contacts
+          name: Bootstrap
+          command: make bootstrap
+      # - run:
+      #     name: Tests
+      #     command: make test
+      - run:
+          name: Compile
+          command: make bin
+      - persist_to_workspace:
+          root: .
+          paths:
+            - pkg
 
-      - store_test_results: # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
-          path: /tmp/test-results
+      # TODO
+      # push to s3
+
+  build-container:
+    working_directory: /go/src/github.com/hashicorp/nomad
+    docker:
+      - image: circleci/golang:1.12
+        user: root
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace:
+          at: ./package
+      - run:
+          name: Build & publish a container
+          command: |
+            apt-get update && apt-get install tree
+            cd docker
+            export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"
+            echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin
+            make publish
 
 workflows:
   version: 2
-  build_and_test:
+  build-test:
     jobs:
       - build
-      - test
+      - build-container:
+          context: org-global
+          requires:
+            - build
