@@ -11,9 +11,9 @@ jobs:
       - run:
           name: Bootstrap
           command: make bootstrap
-      - run:
-          name: Tests
-          command: make test
+      # - run:
+      #     name: Tests
+      #     command: make test
       - run:
           name: Compile
           command: make bin
