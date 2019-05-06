@@ -1,13 +1,15 @@
 version: 2.1
 
 orbs:
-  twistlock: twistlock/twistcli-scan@1.0.4
   s3: circleci/aws-s3@1.0.8
 
-export-image-tag: &export-image-tag
-  name: Export image tag
-  command: |
-    echo 'export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"' >> $BASH_ENV
+references:
+  ccc-image: &ccc-image
+    circleci/command-convenience:0.1.793-476a3ab
+
+  hub-auth: &hub-auth
+    username: $DOCKER_HUB_USER
+    password: $DOCKER_HUB_PASSWORD
 
 jobs:
   compile:
@@ -22,16 +24,15 @@ jobs:
           name: Bootstrap
           command: make bootstrap
       # TODO should these pass?
-      # - run:
-      #     name: Tests
-      #     command: make test
       - run:
-          <<: *export-image-tag
+          name: Run tests
+          command: make test
       - run:
           name: Compile
           command: |
             apt-get update && apt-get install tree
             make bin
+            export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"
             zip nomad_${TAG}.linux_amd64.zip pkg/linux_amd64/nomad
       # - s3/copy:
       #     from: pkg/linux_amd64/nomad
@@ -46,10 +47,8 @@ jobs:
   publish-cloud-container:
     working_directory: /root/nomad
     docker:
-      - image: circleci/command-convenience:0.1.793-476a3ab
-        auth:
-          username: $DOCKER_HUB_USER
-          password: $DOCKER_HUB_PASSWORD
+      - image: *ccc-image
+        auth: *hub-auth
         environment:
           NAME: nomad
           DOCKER_REGISTRY: dockerhub
@@ -61,7 +60,21 @@ jobs:
           at: /root/nomad
       - run: publish
 
-    # TODO server container
+  publish-server-container:
+    working_directory: /root/nomad
+    docker:
+      - image: *ccc-image
+        auth: *hub-auth
+        environment:
+          NAME: server-nomad
+          DOCKER_REGISTRY: dockerhub
+          DOCKERFILE_PATH: docker/Dockerfile.server
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace:
+          at: /root/nomad
+      - run: publish
 
 workflows:
   version: 2
@@ -70,6 +83,10 @@ workflows:
       - compile:
           context: org-global
       - publish-cloud-container:
+          context: org-global
+          requires:
+            - compile
+      - publish-server-container:
           context: org-global
           requires:
             - compile
