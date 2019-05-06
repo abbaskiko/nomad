@@ -14,11 +14,11 @@ RUN apt-get update \
 #       && rm /tmp/nomad.zip
 ADD pkg/linux_amd64/nomad /usr/bin/nomad
 
-ADD default.hcl /usr/local/etc/nomad/default.hcl
-COPY client.hcl /etc/nomad/client.hcl
-COPY default.hcl /etc/nomad/default.hcl
-COPY server.hcl /etc/nomad/server.hcl
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+ADD docker/default.hcl /usr/local/etc/nomad/default.hcl
+COPY docker/client.hcl /etc/nomad/client.hcl
+COPY docker/default.hcl /etc/nomad/default.hcl
+COPY docker/server.hcl /etc/nomad/server.hcl
+COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod a+x /docker-entrypoint.sh
 
 VOLUME ["/opt/nomad"]

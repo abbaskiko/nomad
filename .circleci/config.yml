@@ -47,6 +47,9 @@ jobs:
     working_directory: /root/nomad
     docker:
       - image: circleci/command-convenience:0.1.793-476a3ab
+        auth:
+          username: $DOCKER_HUB_USER
+          password: $DOCKER_HUB_PASSWORD
         environment:
           NAME: nomad
           DOCKER_REGISTRY: dockerhub
@@ -55,7 +58,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - attach_workspace:
-          at: /root/nomad/docker
+          at: /root/nomad
       - run: publish
 
     # TODO server container
