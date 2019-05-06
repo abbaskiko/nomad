@@ -26,15 +26,18 @@ jobs:
       #     name: Tests
       #     command: make test
       - run:
+          <<: *export-image-tag
+      - run:
           name: Compile
           command: |
             apt-get update && apt-get install tree
             make bin
-      # TODO credentials?
-      # TODO version?
+            zip nomad_${TAG}.linux_amd64.zip pkg/linux_amd64/nomad
       # - s3/copy:
       #     from: pkg/linux_amd64/nomad
-      #     to: 's3://circle-downloads/nomad-'
+      #     to: 's3://circle-downloads'
+      #     aws-access-key-id: DEV_AWS_ACCESS_KEY_ID
+      #     aws-secret-access-key: DEV_AWS_SECRET_ACCESS_KEY
       - persist_to_workspace:
           root: .
           paths:
@@ -60,8 +63,8 @@ jobs:
             make image_internal
             make image_server
             mkdir workspace
-            docker save circleci/nomad:${TAG} -o workspace/nomad.tar
-            docker save circleci/server-nomad:${TAG} -o workspace/server-nomad.tar
+            docker save circleci/nomad -o workspace/nomad.tar
+            docker save circleci/server-nomad -o workspace/server-nomad.tar
       - persist_to_workspace:
           root: docker/workspace
           paths:
@@ -89,7 +92,8 @@ workflows:
   version: 2
   compile-and-package:
     jobs:
-      - compile
+      - compile:
+          context: org-global
       - build-containers:
           context: org-global
           requires:
@@ -101,6 +105,9 @@ workflows:
           context: org-global
           image-tar: nomad.tar
           image: circleci/nomad
+          tl_user: $TWISTLOCK_USER
+          tl_pass: TWISTLOCK_PASS
+          tl_console_url: $TWISTLOCK_URL
       - twistlock/scan-image:
           name: twistlock-server
           requires:
@@ -108,6 +115,9 @@ workflows:
           context: org-global
           image-tar: server-nomad.tar
           image: circleci/server-nomad
+          tl_user: $TWISTLOCK_USER
+          tl_pass: TWISTLOCK_PASS
+          tl_console_url: $TWISTLOCK_URL
       - publish-containers:
           context: org-global
           requires:
