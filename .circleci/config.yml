@@ -43,50 +43,22 @@ jobs:
           paths:
             - pkg
 
-  build-containers:
-    working_directory: /go/src/github.com/hashicorp/nomad
+  publish-cloud-container:
+    working_directory: /root/nomad
     docker:
-      - image: circleci/golang:1.12
-        user: root
+      - image: circleci/command-convenience:0.1.793-476a3ab
+        environment:
+          NAME: nomad
+          DOCKER_REGISTRY: dockerhub
+          DOCKERFILE_PATH: docker/Dockerfile
     steps:
       - checkout
       - setup_remote_docker
       - attach_workspace:
-          at: docker
-      - run:
-          <<: *export-image-tag
-      - run:
-          name: Build containers
-          command: |
-            apt-get update && apt-get install tree
-            cd docker
-            make image_internal
-            make image_server
-            mkdir workspace
-            docker save circleci/nomad -o workspace/nomad.tar
-            docker save circleci/server-nomad -o workspace/server-nomad.tar
-      - persist_to_workspace:
-          root: docker/workspace
-          paths:
-            - nomad.tar
-            - server-nomad.tar
+          at: /root/nomad/docker
+      - run: publish
 
-  publish-containers:
-    working_directory: /go/src/github.com/hashicorp/nomad
-    docker:
-      - image: circleci/golang:1.12
-        user: root
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          <<: *export-image-tag
-      - run:
-          name: Publish containers
-          command: |
-            cd docker
-            echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin
-            make publish
+    # TODO server container
 
 workflows:
   version: 2
@@ -94,32 +66,7 @@ workflows:
     jobs:
       - compile:
           context: org-global
-      - build-containers:
+      - publish-cloud-container:
           context: org-global
           requires:
             - compile
-      - twistlock/scan-image:
-          name: twistlock-cloud
-          requires:
-            - build-containers
-          context: org-global
-          image-tar: nomad.tar
-          image: circleci/nomad
-          tl_user: $TWISTLOCK_USER
-          tl_pass: TWISTLOCK_PASS
-          tl_console_url: $TWISTLOCK_URL
-      - twistlock/scan-image:
-          name: twistlock-server
-          requires:
-            - build-containers
-          context: org-global
-          image-tar: server-nomad.tar
-          image: circleci/server-nomad
-          tl_user: $TWISTLOCK_USER
-          tl_pass: TWISTLOCK_PASS
-          tl_console_url: $TWISTLOCK_URL
-      - publish-containers:
-          context: org-global
-          requires:
-            - twistlock-cloud
-            - twistlock-server
