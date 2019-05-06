@@ -10,6 +10,6 @@ image_server:
 		-f ./Dockerfile.server .
 
 .PHONY: publish
-publish: image_internal image_server
+publish:
 	docker push circleci/nomad:$(TAG)
 	docker push circleci/server-nomad:$(TAG)

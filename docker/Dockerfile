@@ -1,7 +1,8 @@
-FROM debian:9.5
+FROM debian:9.8
 
 RUN apt-get update \
   && apt-get upgrade -y \
+  && apt-get install -y curl \
   && rm -rf /var/lib/apt/lists/*
 
 # ENV NOMAD_VERSION=0.5.6-drain-patch-05 \

@@ -1,7 +1,13 @@
 version: 2.1
 
 orbs:
+  twistlock: twistlock/twistcli-scan@1.0.4
   s3: circleci/aws-s3@1.0.8
+
+export-image-tag: &export-image-tag
+  name: Export image tag
+  command: |
+    echo 'export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"' >> $BASH_ENV
 
 jobs:
   compile:
@@ -34,7 +40,7 @@ jobs:
           paths:
             - pkg
 
-  build-container:
+  build-containers:
     working_directory: /go/src/github.com/hashicorp/nomad
     docker:
       - image: circleci/golang:1.12
@@ -45,21 +51,65 @@ jobs:
       - attach_workspace:
           at: docker
       - run:
-          name: Build & publish a container
+          <<: *export-image-tag
+      - run:
+          name: Build containers
           command: |
             apt-get update && apt-get install tree
             cd docker
-            export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"
+            make image_internal
+            make image_server
+            mkdir workspace
+            docker save circleci/nomad:${TAG} -o workspace/nomad.tar
+            docker save circleci/server-nomad:${TAG} -o workspace/server-nomad.tar
+      - persist_to_workspace:
+          root: docker/workspace
+          paths:
+            - nomad.tar
+            - server-nomad.tar
+
+  publish-containers:
+    working_directory: /go/src/github.com/hashicorp/nomad
+    docker:
+      - image: circleci/golang:1.12
+        user: root
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          <<: *export-image-tag
+      - run:
+          name: Publish containers
+          command: |
+            cd docker
             echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin
             make publish
-      # TODO vulnerability check
 
 workflows:
   version: 2
   compile-and-package:
     jobs:
       - compile
-      - build-container:
+      - build-containers:
           context: org-global
           requires:
             - compile
+      - twistlock/scan-image:
+          name: twistlock-cloud
+          requires:
+            - build-containers
+          context: org-global
+          image-tar: nomad.tar
+          image: circleci/nomad
+      - twistlock/scan-image:
+          name: twistlock-server
+          requires:
+            - build-containers
+          context: org-global
+          image-tar: server-nomad.tar
+          image: circleci/server-nomad
+      - publish-containers:
+          context: org-global
+          requires:
+            - twistlock-cloud
+            - twistlock-server
