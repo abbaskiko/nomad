@@ -1,0 +1,123 @@
+version: 2.1
+
+orbs:
+  s3: circleci/aws-s3@1.0.8
+
+references:
+  ccc-image: &ccc-image
+    circleci/command-convenience:0.1.803-6f4fb54
+
+  hub-auth: &hub-auth
+    username: $DOCKER_HUB_USER
+    password: $DOCKER_HUB_PASSWORD
+
+jobs:
+  compile:
+    working_directory: /go/src/github.com/hashicorp/nomad
+    docker:
+      - image: circleci/golang:1.12
+        user: root
+    steps:
+      - checkout
+      - run:
+          name: Bootstrap
+          command: make bootstrap
+      # TODO should these pass?
+      # - run:
+      #     name: Run tests
+      #     command: make test
+      - run:
+          name: Compile
+          command: |
+            apt-get update && apt-get install tree
+            make bin
+            export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"
+            zip pkg/nomad_${TAG}.linux_amd64.zip pkg/linux_amd64/nomad
+      - persist_to_workspace:
+          root: .
+          paths:
+            - pkg
+
+  upload-to-s3:
+    working_directory: /go/src/github.com/hashicorp/nomad
+    docker:
+      - image: circleci/golang:1.12
+        user: root
+    environment:
+      AWS_REGION: us-east-1
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - s3/copy:
+          from: pkg
+          to: 's3://circleci-nomad/'
+          aws-region: AWS_REGION
+          arguments: |
+            --recursive \
+            --exclude "*" \
+            --include "nomad_*.linux_amd64.zip" \
+            --acl public-read
+
+  publish-cloud-container:
+    working_directory: /root/nomad
+    docker:
+      - image: *ccc-image
+        auth: *hub-auth
+        environment:
+          NAME: nomad
+          DOCKER_REGISTRY: dockerhub
+          DOCKERFILE_PATH: docker/Dockerfile
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace:
+          at: /root/nomad
+      - run: publish
+
+  publish-server-container:
+    working_directory: /root/nomad
+    docker:
+      - image: *ccc-image
+        auth: *hub-auth
+        environment:
+          NAME: server-nomad
+          DOCKER_REGISTRY: dockerhub
+          DOCKERFILE_PATH: docker/Dockerfile.server
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace:
+          at: /root/nomad
+      - run: publish
+
+workflows:
+  version: 2
+  compile-and-package:
+    jobs:
+      - compile:
+          context: org-global
+      - upload-to-s3:
+          context: org-global
+          requires:
+            - compile
+          filters:
+            branches:
+              only:
+                - master
+      - publish-cloud-container:
+          context: org-global
+          requires:
+            - compile
+          filters:
+            branches:
+              only:
+                - master
+      - publish-server-container:
+          context: org-global
+          requires:
+            - compile
+          filters:
+            branches:
+              only:
+                - master
