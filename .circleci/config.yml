@@ -101,10 +101,10 @@ workflows:
           context: org-global
           requires:
             - compile
-          # filters:
-          #   branches:
-          #     only:
-          #       - master
+          filters:
+            branches:
+              only:
+                - master
       - publish-cloud-container:
           context: org-global
           requires:
