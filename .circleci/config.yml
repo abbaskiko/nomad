@@ -5,7 +5,7 @@ orbs:
 
 references:
   ccc-image: &ccc-image
-    circleci/command-convenience:0.1.793-476a3ab
+    circleci/command-convenience:0.1.803-6f4fb54
 
   hub-auth: &hub-auth
     username: $DOCKER_HUB_USER
@@ -32,7 +32,7 @@ jobs:
             apt-get update && apt-get install tree
             make bin
             export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"
-            zip nomad_${TAG}.linux_amd64.zip pkg/linux_amd64/nomad
+            zip pkg/nomad_${TAG}.linux_amd64.zip pkg/linux_amd64/nomad
       - persist_to_workspace:
           root: .
           paths:
@@ -50,11 +50,14 @@ jobs:
       - attach_workspace:
           at: .
       - s3/copy:
-          from: pkg/linux_amd64/nomad
-          to: 's3://circleci-nomad'
-          aws-access-key-id: DEV_AWS_ACCESS_KEY_ID
-          aws-secret-access-key: DEV_AWS_SECRET_ACCESS_KEY
+          from: pkg
+          to: 's3://circleci-nomad/'
           aws-region: AWS_REGION
+          arguments: |
+            --recursive \
+            --exclude "*" \
+            --include "nomad_*.linux_amd64.zip" \
+            --acl public-read
 
   publish-cloud-container:
     working_directory: /root/nomad
