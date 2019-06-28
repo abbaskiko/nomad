@@ -12,41 +12,36 @@ references:
     password: $DOCKER_HUB_PASSWORD
 
 jobs:
-  compile:
-    working_directory: /go/src/github.com/hashicorp/nomad
+  download-nomad:
+    environment:
+      NOMAD_VERSION: 0.9.3
+      NOMAD_SHA: cbd008dd2f3c622cb931ce8e7e6465f5b683e66845eb70adb776c970a8029578
     docker:
       - image: circleci/golang:1.12
         user: root
     steps:
-      - checkout
       - run:
-          name: Bootstrap
-          command: make bootstrap
-      # TODO should these pass?
-      # - run:
-      #     name: Run tests
-      #     command: make test
-      - run:
-          name: Compile
+          name: Download
           command: |
-            apt-get update && apt-get install tree
-            make bin
-            export TAG="0.5.6-${CIRCLE_BUILD_NUM}-${CIRCLE_BRANCH}"
-            zip pkg/nomad_${TAG}.linux_amd64.zip pkg/linux_amd64/nomad
+            mkdir -p pkg/linux_amd64
+            echo "Downloading Nomad ${NOMAD_VERSION} package"
+            curl --location \
+            --output pkg/nomad_${NOMAD_VERSION}_linux_amd64.zip \
+            "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_amd64.zip"
+            echo "${NOMAD_SHA} pkg/nomad_${NOMAD_VERSION}_linux_amd64.zip" | sha256sum -c -
+            unzip pkg/nomad_${NOMAD_VERSION}_linux_amd64.zip -d pkg/linux_amd64/
       - persist_to_workspace:
           root: .
           paths:
             - pkg
 
   upload-to-s3:
-    working_directory: /go/src/github.com/hashicorp/nomad
     docker:
       - image: circleci/golang:1.12
         user: root
     environment:
       AWS_REGION: us-east-1
     steps:
-      - checkout
       - attach_workspace:
           at: .
       - s3/copy:
@@ -56,7 +51,7 @@ jobs:
           arguments: |
             --recursive \
             --exclude "*" \
-            --include "nomad_*.linux_amd64.zip" \
+            --include "nomad_*_linux_amd64.zip" \
             --acl public-read
 
   publish-cloud-container:
@@ -93,14 +88,14 @@ jobs:
 
 workflows:
   version: 2
-  compile-and-package:
+  download-and-publish:
     jobs:
-      - compile:
+      - download-nomad:
           context: org-global
       - upload-to-s3:
           context: org-global
           requires:
-            - compile
+            - download-nomad
           filters:
             branches:
               only:
@@ -108,7 +103,7 @@ workflows:
       - publish-cloud-container:
           context: org-global
           requires:
-            - compile
+            - download-nomad
           filters:
             branches:
               only:
@@ -116,7 +111,7 @@ workflows:
       - publish-server-container:
           context: org-global
           requires:
-            - compile
+            - download-nomad
           filters:
             branches:
               only:
